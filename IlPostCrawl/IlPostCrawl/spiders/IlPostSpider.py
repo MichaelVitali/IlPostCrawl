@@ -38,7 +38,7 @@ class IlPostSpider(scrapy.Spider):
             s_number_of_pages = response.xpath("//body//div[@class='new-pagination']/div[@class='new-pag-cent']/text()").extract()[0].split()[2]
             number_of_pages = int(s_number_of_pages)
 
-        for i in range(1, 2):
+        for i in range(1, number_of_pages+1):
             url_next_page = f'{response.url}page/{i}/'
             yield scrapy.Request(url=url_next_page, callback=self.parse_page, dont_filter=True)
 
