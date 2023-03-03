@@ -38,7 +38,7 @@ class IlPostSpider(scrapy.Spider):
             s_number_of_pages = response.xpath("//body//div[@class='new-pagination']/div[@class='new-pag-cent']/text()").extract()[0].split()[2]
             number_of_pages = int(s_number_of_pages)
 
-        for i in range(1, number_of_pages+1):
+        for i in range(1, 2):
             url_next_page = f'{response.url}page/{i}/'
             yield scrapy.Request(url=url_next_page, callback=self.parse_page, dont_filter=True)
 
@@ -65,11 +65,13 @@ class IlPostSpider(scrapy.Spider):
         html_article = rs.get(response.url).text
         html_article = bs.BeautifulSoup(html_article, 'lxml')
         paragraph_elements = html_article.find_all('p')
-        paragraph_texts = [p.text for p in paragraph_elements[:-1] if not (p.find('strong') and p.find('span', class_='highlight') and p.find('a', id_='show_login'))]
-        complete_text = '\n'.join(paragraph_texts)
 
-        new.add_value('text', complete_text)
-        new.add_xpath('title', "//body//h1[@class='entry-title']/text()")
-        new.add_xpath('topic', "//body//li/a[@class='categoria']/text()")
+        if len(response.xpath("//body//div/span[@class='highlight']").extract()) == 0:
+            paragraph_texts = [p.text for p in paragraph_elements[:-1] if not (p.find('strong'))]
+            complete_text = '\n'.join(paragraph_texts)
 
-        yield new.load_item()
+            new.add_value('text', complete_text)
+            new.add_xpath('title', "//body//h1[@class='entry-title']/text()")
+            new.add_xpath('topic', "//body//li/a[@class='categoria']/text()")
+
+            yield new.load_item()
