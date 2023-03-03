@@ -13,26 +13,14 @@ class IlPostSpider(scrapy.Spider):
     }
 
     '''
-        This function start the parsing of all the pages of each category of newspapers of the website
+        The function, first of all, take all the url of all the categories of the newspaper. Then, it calls the parser for each of them.
     '''
     def parse(self, response):
 
-        categories = [
-            'mondo',
-            'italia',
-            'politica',
-            'tecnologia',
-            'internet',
-            'scienza',
-            'cultura',
-            'economia',
-            'sport',
-            'media',
-        ]
+        categories_url = response.xpath("//body//div[@class='headerIlPost_Nav']/ul/li/a/@href").extract()[:-2]
 
-        for category in categories:
-            url = f'https://www.ilpost.it/{category}/'
-            yield scrapy.Request(url=url, callback=self.parse_category, dont_filter=True)
+        for category_url in categories_url:
+            yield scrapy.Request(url=category_url, callback=self.parse_category, dont_filter=True)
 
     '''
         This function makes the following things:
@@ -41,8 +29,14 @@ class IlPostSpider(scrapy.Spider):
     '''
     def parse_category(self, response):
 
-        number_of_pages = response.xpath("//body//li/a[@class='page-numbers']/text()").extract()[2]
-        number_of_pages = int(number_of_pages.replace('.',''))
+        number_of_pages = 0
+
+        if len(response.xpath("//body//li/a[@class='page-numbers']").extract()) > 0:
+            number_of_pages = response.xpath("//body//li/a[@class='page-numbers']/text()").extract()[2]
+            number_of_pages = int(number_of_pages.replace('.',''))
+        elif len(response.xpath("//body//div[@class='new-pagination']/div[@class='new-pag-cent']").extract()) > 0:
+            s_number_of_pages = response.xpath("//body//div[@class='new-pagination']/div[@class='new-pag-cent']/text()").extract()[0].split()[2]
+            number_of_pages = int(s_number_of_pages)
 
         for i in range(1, number_of_pages+1):
             url_next_page = f'{response.url}page/{i}/'
