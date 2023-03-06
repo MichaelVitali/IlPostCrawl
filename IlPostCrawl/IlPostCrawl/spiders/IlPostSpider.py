@@ -52,12 +52,12 @@ class IlPostSpider(scrapy.Spider):
             yield scrapy.Request(url=link, callback=self.parse_article, dont_filter=True)
 
     '''
-        This function parse a single article extracting:
+        This function parse a single article extracting and adding to an Item:
         1) The text of the article
         2) The title of the article
         3) The topic of the article
         
-        It also adds all these three thing into an item that is use to create the csv file
+        It makes these three steps only if it is an article that doesn't require a subscription. Otherwise, it skips it.
     '''
     def parse_article(self, response):
         new = ItemLoader(item=IlpostItem(), response=response)
@@ -67,11 +67,12 @@ class IlPostSpider(scrapy.Spider):
         paragraph_elements = html_article.find_all('p')
 
         if len(response.xpath("//body//div/span[@class='highlight']").extract()) == 0:
-            paragraph_texts = [p.text for p in paragraph_elements[:-1] if not (p.find('strong'))]
+            paragraph_texts = [p.text for p in paragraph_elements[:-1] if not (p.find('a', class_='leggi-anche') or
+                                                                               p.findParent(class_='wp-caption'))]
             complete_text = '\n'.join(paragraph_texts)
 
             new.add_value('text', complete_text)
             new.add_xpath('title', "//body//h1[@class='entry-title']/text()")
-            new.add_xpath('topic', "//body//li/a[@class='categoria']/text()")
+            new.add_xpath('topic', "//body//li/a[contains(@class, 'categoria') or contains(@class, 'rubrica')]/text()")
 
             yield new.load_item()
